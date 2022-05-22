@@ -1,0 +1,8 @@
+cmake_minimum_required(VERSION 2.8.12)
+project( SPM )
+find_package( OpenCV REQUIRED )
+include_directories( ${OpenCV_INCLUDE_DIRS} )
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY bin)
+add_executable( main src/main.cpp )
+target_compile_options( main PRIVATE -O3 -Wall )
+target_link_libraries( main ${OpenCV_LIBS} pthread )
