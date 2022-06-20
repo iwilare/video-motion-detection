@@ -54,7 +54,7 @@ struct VideoDetectionFastFlow : VideoDetectionMain {
             return new bool(is_motion_frame(background_blur_grey, total_pixels, frame, difference_threshold, detection_percentage));
         };
 
-        size_t farm_workers = n_workers < 1 ? 1 : n_workers - 1;
+        size_t farm_workers = n_workers <= 1 ? 1 : n_workers - 1;
 
         vector<unique_ptr<ff_node>> workers(farm_workers);
 

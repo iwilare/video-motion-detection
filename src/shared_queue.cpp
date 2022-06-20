@@ -11,7 +11,7 @@ template<typename T> class shared_queue {
     std::condition_variable available;
     std::mutex              mutex;
     std::queue<T>           queue;
-    bool                    is_done;
+    bool                    is_done = false;
 public:
     shared_queue() {}
     ~shared_queue() {}
@@ -28,10 +28,10 @@ public:
     std::optional<T> pop() {
         std::unique_lock<std::mutex> lock(mutex);
 
-        while(queue.empty() || is_done)
+        while(queue.empty() && !is_done)
             available.wait(lock);
 
-        if(is_done) {
+        if(queue.empty() && is_done) {
             return {};
         } else {
             T value(std::move(queue.front()));

@@ -6,10 +6,11 @@
 using namespace std;
 
 // Parse and get the command line arguments.
-void get_arguments(int argn, char *argc[], string* filename, float* difference_threshold, float* detection_percentage, size_t* n_workers, bool* thread_affinity) {
+void get_arguments(int argn, char *argc[], string* filename, float* detection_percentage, float* difference_threshold, size_t* n_workers, bool* thread_affinity) {
     // Check command line arguments
-    if(!(2 <= argn && argn <= 5)) {
-        cout << "Usage: " << argc[0] << " <filename> [detection percentage] [number of workers] [--affinity]" << endl;
+    if(!(1 + 1 <= argn && argn <= 1 + 5)) {
+        cout << "Usage: " << argc[0] << " <filename> [-d detection_percentage] [-t greyscale_difference_threshold] [-n number_of_workers] [--affinity]" << endl;
+        cout << "Example: " << argc[0] << " video.mp4 -d 0.3 -t 0.2 -n 4 --affinity" << endl;
         exit(1);
     }
 
@@ -22,39 +23,44 @@ void get_arguments(int argn, char *argc[], string* filename, float* difference_t
         exit(1);
     }
 
-    // Read the threshold parameter
-    if(argn >= 2) {
-        *difference_threshold = atoi(argc[2]);
-        if(*difference_threshold <= 0) {
-            cout << "Error: difference_threshold must be a valid percentage between 0 and 1." << endl;
-            exit(1);
-        }
-    }
-
-    // Read the optional detection_percentage parameter
-    if(argn >= 3) {
-        *detection_percentage = atof(argc[3]);
-        if(!(0.0 <= *detection_percentage && *detection_percentage <= 1.0)) {
-            cout << "Error: detection_percentage must be a valid float percentage between 0 and 1." << endl;
-            exit(1);
-        }
-    }
-
-    // Read the workers parameter
-    if(argn >= 4) {
-        *n_workers = atoi(argc[4]);
-        if(*n_workers <= 0) {
-            cout << "Error: the number of workers must be a valid number greater than zero." << endl;
-            exit(1);
-        }
-    }
-
-    // Read the affinity option
-    if(argn >= 5) {
-        if(strcmp(argc[5], "--affinity") == 0)
+    for(int i = 2; i < argn; i++) {
+        if(strcmp(argc[i], "-d") == 0) {
+            i++;
+            if(i >= argn) {
+                cout << "Error: -d requires a parameter." << endl;
+                exit(1);
+            }
+            *detection_percentage = atof(argc[i]);
+            if(!(0.0 <= *detection_percentage && *detection_percentage <= 1.0)) {
+                cout << "Error: detection_percentage must be a valid float percentage between 0 and 1." << endl;
+                exit(1);
+            }
+        } else if(strcmp(argc[i], "-t") == 0) {
+            i++;
+            if(i >= argn) {
+                cout << "Error: -t requires a parameter." << endl;
+                exit(1);
+            }
+            *difference_threshold = atof(argc[i]);
+            if(!(0.0 <= *difference_threshold && *difference_threshold <= 1.0)) {
+                cout << "Error: difference_threshold must be a valid float percentage between 0 and 1." << endl;
+                exit(1);
+            }
+        } else if(strcmp(argc[i], "-n") == 0) {
+            i++;
+            if(i >= argn) {
+                cout << "Error: -n requires a parameter." << endl;
+                exit(1);
+            }
+            *n_workers = atoi(argc[i]);
+            if(*n_workers <= 0) {
+                cout << "Error: number_of_workers must be a valid integer greater than 0." << endl;
+                exit(1);
+            }
+        } else if(strcmp(argc[i], "--affinity") == 0) {
             *thread_affinity = true;
-        else {
-            cout << "Error: unrecognized command line option, required --affinity." << endl;
+        } else {
+            cout << "Error: unrecognized argument " << argc[i] << endl;
             exit(1);
         }
     }

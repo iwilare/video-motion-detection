@@ -23,6 +23,8 @@ struct VideoDetectionThreads : VideoDetectionMain {
         Mat background;
         video >> background;
 
+        cerr<<"Using: " <<n_workers<<endl;
+
         // Pre-process the background frame
         vector<float> background_blur_grey = blur_grey(&background);
         size_t total_pixels = background_blur_grey.size();
@@ -30,7 +32,7 @@ struct VideoDetectionThreads : VideoDetectionMain {
         atomic<size_t> motion_frames(0);
         shared_queue<Mat> queue;
 
-        size_t thread_workers = n_workers < 1 ? 1 : n_workers - 1;
+        n_workers = 1;
 
         auto worker = [&]() {
             while(true) {
@@ -38,12 +40,14 @@ struct VideoDetectionThreads : VideoDetectionMain {
                 if(frame_opt) {
                     auto frame = frame_opt.value();
                     auto changed = is_motion_frame(background_blur_grey, total_pixels, &frame, difference_threshold, detection_percentage);
+                    motion_frames += changed;
                     cout << (changed ? "X" : "_");
-                    motion_frames += changed ? 1 : 0;
                 } else
                     return;
             }
         };
+
+        size_t thread_workers = n_workers <= 1 ? 1 : n_workers - 1;
 
         vector<thread> workers(thread_workers);
 
@@ -51,6 +55,14 @@ struct VideoDetectionThreads : VideoDetectionMain {
             workers[i] = thread(worker);
             if(set_thread_affinity)
                 pin_thread_to_cpu(i, workers[i]);
+        }
+
+        {
+            Mat frame;
+            for(video >> frame; !frame.empty(); video >> frame) {
+                queue.push(frame);
+            }
+            queue.done();
         }
 
         for(size_t i = 0; i < thread_workers; i++)
