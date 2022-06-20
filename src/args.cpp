@@ -5,8 +5,8 @@
 
 using namespace std;
 
-// Checks the command line arguments and returns the K given as parameter.
-void check_arguments(int argn, char *argc[], string* filename, float* difference_threshold, float* detection_percentage, size_t* workers, bool* thread_affinity) {
+// Parse and get the command line arguments.
+void get_arguments(int argn, char *argc[], string* filename, float* difference_threshold, float* detection_percentage, size_t* n_workers, bool* thread_affinity) {
     // Check command line arguments
     if(!(2 <= argn && argn <= 5)) {
         cout << "Usage: " << argc[0] << " <filename> [detection percentage] [number of workers] [--affinity]" << endl;
@@ -24,8 +24,8 @@ void check_arguments(int argn, char *argc[], string* filename, float* difference
 
     // Read the threshold parameter
     if(argn >= 2) {
-        *workers = atoi(argc[2]);
-        if(*workers <= 0) {
+        *difference_threshold = atoi(argc[2]);
+        if(*difference_threshold <= 0) {
             cout << "Error: difference_threshold must be a valid percentage between 0 and 1." << endl;
             exit(1);
         }
@@ -42,8 +42,8 @@ void check_arguments(int argn, char *argc[], string* filename, float* difference
 
     // Read the workers parameter
     if(argn >= 4) {
-        *workers = atoi(argc[4]);
-        if(*workers <= 0) {
+        *n_workers = atoi(argc[4]);
+        if(*n_workers <= 0) {
             cout << "Error: the number of workers must be a valid number greater than zero." << endl;
             exit(1);
         }

@@ -38,7 +38,8 @@ vector<vector<float>> Kernel = {
     {1, 1, 1},
 };
 
-vector<vector<float>> greyscale(const Mat& a) {
+vector<vector<float>> greyscale(const Mat* m) {
+    Mat a(move(*m));
     vector<vector<float>> result(a.rows, vector<float>(a.cols));
     for (auto i = 0; i < a.rows; i++) {
         for (auto j = 0; j < a.cols; j++) {
@@ -49,14 +50,14 @@ vector<vector<float>> greyscale(const Mat& a) {
     return result;
 }
 
-vector<float> blur_grey(const Mat& frame) {
+vector<float> blur_grey(const Mat* frame) {
     return blur(Kernel, greyscale(frame));
 }
 
-size_t changed_pixels(vector<float>& background_blur_grey, Mat& frame, float threshold) {
+size_t changed_pixels(vector<float>& background_blur_grey, const Mat* frame, float threshold) {
     return count_differences(background_blur_grey, blur_grey(frame), threshold);
 }
 
-bool is_motion_frame(vector<float> background_blur_grey, size_t total_pixels, Mat& frame, float difference_threshold, float detection_percentage) {
+bool is_motion_frame(vector<float> background_blur_grey, size_t total_pixels, const Mat* frame, float difference_threshold, float detection_percentage) {
     return (float)changed_pixels(background_blur_grey, frame, difference_threshold) / (float)total_pixels > detection_percentage;
 }
