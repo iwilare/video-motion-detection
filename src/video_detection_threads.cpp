@@ -23,8 +23,6 @@ struct VideoDetectionThreads : VideoDetectionMain {
         Mat background;
         video >> background;
 
-        cerr<<"Using: " <<n_workers<<endl;
-
         // Pre-process the background frame
         vector<float> background_blur_grey = blur_grey(&background);
         size_t total_pixels = background_blur_grey.size();

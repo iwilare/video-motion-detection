@@ -11,7 +11,7 @@ target_link_libraries( sequential ${OpenCV_LIBS} pthread )
 
 add_executable( fastflow src/video_detection_fastflow.cpp )
 set_property(TARGET fastflow PROPERTY CXX_STANDARD 20)
-target_compile_options( fastflow PRIVATE -O3 -Wall)
+target_compile_options( fastflow PRIVATE -O3 -Wall -g)
 target_link_libraries( fastflow ${OpenCV_LIBS} pthread )
 
 add_executable( threads src/video_detection_threads.cpp )

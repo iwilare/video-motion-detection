@@ -25,6 +25,7 @@ struct VideoDetectionSequential : VideoDetectionMain {
         size_t total_pixels = background_blur_grey.size();
 
         size_t motion_frames = 0;
+
         Mat frame;
         for(video >> frame; !frame.empty(); video >> frame) {
             auto changed = is_motion_frame(background_blur_grey, total_pixels, &frame, difference_threshold, detection_percentage);
