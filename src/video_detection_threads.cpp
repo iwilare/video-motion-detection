@@ -32,11 +32,9 @@ struct VideoDetectionThreads : VideoDetectionMain {
         atomic<size_t> motion_frames(0);
         shared_queue<Mat> queue;
 
-        n_workers = 1;
-
         auto worker = [&]() {
             while(true) {
-                auto frame_opt = queue.pop();
+                optional<Mat> frame_opt = queue.pop();
                 if(frame_opt) {
                     auto frame = frame_opt.value();
                     auto changed = is_motion_frame(background_blur_grey, total_pixels, &frame, difference_threshold, detection_percentage);
@@ -60,7 +58,7 @@ struct VideoDetectionThreads : VideoDetectionMain {
         {
             Mat frame;
             for(video >> frame; !frame.empty(); video >> frame) {
-                queue.push(frame);
+                queue.push(move(frame));
             }
             queue.done();
         }

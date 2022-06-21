@@ -16,7 +16,7 @@ public:
     shared_queue() {}
     ~shared_queue() {}
 
-    void push(const T& v) {
+    void push(const T v) {
         std::unique_lock<std::mutex> lock(mutex);
         queue.push(v);
         available.notify_one();
@@ -24,6 +24,7 @@ public:
     void done() {
         std::unique_lock<std::mutex> lock(mutex);
         is_done = true;
+        available.notify_all();
     }
     std::optional<T> pop() {
         std::unique_lock<std::mutex> lock(mutex);
