@@ -1,20 +1,36 @@
 cmake_minimum_required(VERSION 2.8.12)
 project( SPM )
-find_package( OpenCV REQUIRED )
+find_package(OpenCV REQUIRED)
+find_package(OpenMP REQUIRED) # Comments this if OpenMP is not needed
 include_directories( ${OpenCV_INCLUDE_DIRS} )
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY bin)
 
-add_executable( sequential src/video_detection_sequential.cpp )
+# Measurements program
+add_executable( measurements src/measurements.cpp )
+set_property(TARGET measurements PROPERTY CXX_STANDARD 20)
+target_compile_options( measurements PRIVATE -O3 -Wall)
+target_link_libraries( measurements ${OpenCV_LIBS} pthread)
+
+# Sequential
+add_executable( sequential src/sequential.cpp )
 set_property(TARGET sequential PROPERTY CXX_STANDARD 20)
 target_compile_options( sequential PRIVATE -O3 -Wall)
 target_link_libraries( sequential ${OpenCV_LIBS} pthread )
 
-add_executable( fastflow src/video_detection_fastflow.cpp )
+# FastFlow
+add_executable( fastflow src/fastflow.cpp )
 set_property(TARGET fastflow PROPERTY CXX_STANDARD 20)
-target_compile_options( fastflow PRIVATE -O3 -Wall -g)
+target_compile_options( fastflow PRIVATE -O3 -Wall)
 target_link_libraries( fastflow ${OpenCV_LIBS} pthread )
 
-add_executable( threads src/video_detection_threads.cpp )
+# Threads
+add_executable( threads src/threads.cpp )
 set_property(TARGET threads PROPERTY CXX_STANDARD 20)
 target_compile_options( threads PRIVATE -O3 -Wall)
 target_link_libraries( threads ${OpenCV_LIBS} pthread )
+
+# OpenMP
+add_executable( omp src/omp.cpp )
+set_property(TARGET omp PROPERTY CXX_STANDARD 20)
+target_compile_options( omp PRIVATE -fopenmp -O3 -Wall )
+target_link_libraries( omp ${OpenCV_LIBS} pthread OpenMP::OpenMP_CXX)
