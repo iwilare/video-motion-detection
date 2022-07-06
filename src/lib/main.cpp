@@ -18,10 +18,7 @@ using namespace std;
 
 /*
     Thin wrapper class to provide a uniform interface for
-    input, error management, and benchmarking with a
-    standardized global program timer.
-
-    Either
+    input, error management, and benchmarking.
 */
 struct VideoDetectionMain {
     // Virtual method to encapsulate the main logic
@@ -74,7 +71,10 @@ struct VideoDetectionMain {
         };
 
         if(benchmark_iterations == 0) {
-            // Run the program normally
+            /*
+                Standard mode:
+                Run the program normally, outputing the result to stdout
+            */
             std::chrono::microseconds total_time(0);
             {
                 utimer timer(&total_time);
@@ -85,7 +85,7 @@ struct VideoDetectionMain {
             return 0;
         } else {
             /*
-                Benchmark mode
+                Benchmark mode:
                 Ignore the input file given and search for the datasets in the videos/ folder.
             */
             vector<pair<string,size_t>> filenames =
@@ -95,13 +95,15 @@ struct VideoDetectionMain {
             // Follow the Unix philosophy and write everything to stdout
             cout << "name,filename,nworkers,time" << endl;
             for(auto& file : filenames) {
-                for(size_t n_workers = 1; n_workers < BENCHMARK_MAX_THREADS; n_workers++) {
+                // Use the n_workers given as input as the limit
+                // Start from the bottom to get better speed and see concrete results faster
+                for(size_t nw = n_workers; nw >= 1; nw--) {
                     std::chrono::microseconds total_time(0);
                     auto [filename, solution] = file;
                     for(size_t i = 0; i < benchmark_iterations; i++) {
                         {
                             cumulative_utimer timer(&total_time);
-                            auto [frames, total_frames] = main_body(filename, n_workers);
+                            auto [frames, total_frames] = main_body(filename, nw);
                             // Check that the number of moving frames is correct
                             if(frames != solution) {
                                 cerr << "Wrong answer!" << endl;
@@ -110,7 +112,7 @@ struct VideoDetectionMain {
                         }
                     }
                     auto time = (total_time / benchmark_iterations).count();
-                    cout << argv[0] << "," << filename << "," << n_workers << "," << time << endl;
+                    cout << argv[0] << "," << filename << "," << nw << "," << time << endl;
                 }
             }
             return 0;

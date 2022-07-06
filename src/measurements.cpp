@@ -7,8 +7,6 @@
 #include "lib/main.cpp"
 #include "lib/video_detection.cpp"
 
-#define N_ITERATIONS 3
-
 using namespace cv;
 using namespace std;
 
@@ -37,7 +35,7 @@ int main(int argn, char** argv) {
     std::chrono::microseconds total_detection_time(0);
 
     size_t motion_frames = 0;
-    size_t iterations = N_ITERATIONS;
+    size_t iterations = n_workers; // Use the number of threads as the number of iterations
     size_t total_frames = -1; // Initialize at each iteration
 
     for(size_t i = 0; i < iterations; i++) {
