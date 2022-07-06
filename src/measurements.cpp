@@ -42,9 +42,9 @@ int main(int argn, char** argv) {
 
     for(size_t i = 0; i < iterations; i++) {
         //{
-        cumulative_utimer init_time(&total_init_time);
+        cumulative_manual_utimer init_time(&total_init_time);
         //{
-        cumulative_utimer open_time(&total_open_time);
+        cumulative_manual_utimer open_time(&total_open_time);
         VideoCapture video(filename);
         if (!video.isOpened()) {
             cout << "Error opening video stream or file" << endl;
@@ -54,7 +54,7 @@ int main(int argn, char** argv) {
         //}
 
         //{
-        cumulative_utimer background_read_time(&total_background_read_time);
+        cumulative_manual_utimer background_read_time(&total_background_read_time);
         Mat background;
         video >> background;
         if(background.empty())
@@ -63,14 +63,14 @@ int main(int argn, char** argv) {
         //}
 
         //{
-        cumulative_utimer preprocess_time(&total_preprocess_time);
+        cumulative_manual_utimer preprocess_time(&total_preprocess_time);
         //{
-        cumulative_utimer background_greyscale_time(&total_background_greyscale_time);
+        cumulative_manual_utimer background_greyscale_time(&total_background_greyscale_time);
         auto g = greyscale(background);
         background_greyscale_time.stop();
         //}
         //{
-        cumulative_utimer background_blur_time(&total_background_blur_time);
+        cumulative_manual_utimer background_blur_time(&total_background_blur_time);
         auto background_blur_grey = blur(AverageKernel, g);
         background_blur_time.stop();
         //}
@@ -85,7 +85,7 @@ int main(int argn, char** argv) {
 
         while(true) {
             //{
-            cumulative_utimer read_time(&total_read_time);
+            cumulative_manual_utimer read_time(&total_read_time);
             Mat frame;
             video >> frame;
             if(frame.empty())
@@ -94,19 +94,19 @@ int main(int argn, char** argv) {
             //}
 
             //{
-            cumulative_utimer greyscale_time(&total_greyscale_time);
+            cumulative_manual_utimer greyscale_time(&total_greyscale_time);
             auto g = greyscale(frame);
             greyscale_time.stop();
             //}
 
             //{
-            cumulative_utimer blur_time(&total_blur_time);
+            cumulative_manual_utimer blur_time(&total_blur_time);
             auto b = blur(AverageKernel, g);
             blur_time.stop();
             //}
 
             //{
-            cumulative_utimer detection_time(&total_detection_time);
+            cumulative_manual_utimer detection_time(&total_detection_time);
             auto d = is_motion_processed_frame(background_blur_grey, b, difference_threshold, detection_percentage);
             detection_time.stop();
             //}
