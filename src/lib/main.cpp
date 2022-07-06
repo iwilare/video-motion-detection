@@ -86,21 +86,21 @@ struct VideoDetectionMain {
         } else {
             /*
                 Benchmark mode
-                Ignore the input file given and search for the datasets in the data/ folder.
+                Ignore the input file given and search for the datasets in the videos/ folder.
             */
             vector<pair<string,size_t>> filenames =
-               {{"data/test_big.mp4", 790}, // Example solutions by running with the default settings
-                {"data/test_mid.mp4", 190},
-                {"data/test_small.mp4", 113}};
+               {{"videos/test_big.mp4", 790}, // Example solutions by running with the default settings
+                {"videos/test_mid.mp4", 190},
+                {"videos/test_small.mp4", 113}};
             // Follow the Unix philosophy and write everything to stdout
             cout << "name,filename,nworkers,time" << endl;
             for(auto& file : filenames) {
                 for(size_t n_workers = 1; n_workers < BENCHMARK_MAX_THREADS; n_workers++) {
                     std::chrono::microseconds total_time(0);
+                    auto [filename, solution] = file;
                     for(size_t i = 0; i < benchmark_iterations; i++) {
                         {
                             cumulative_utimer timer(&total_time);
-                            auto [filename, solution] = file;
                             auto [frames, total_frames] = main_body(filename, n_workers);
                             // Check that the number of moving frames is correct
                             if(frames != solution) {
