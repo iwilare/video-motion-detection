@@ -1,7 +1,8 @@
 #include <string>
 #include <fstream>
-#include <algorithm>
 #include <thread>
+#include <algorithm>
+#include <numeric>
 #include <opencv2/opencv.hpp>
 
 #include "args.cpp"
@@ -73,7 +74,7 @@ struct VideoDetectionMain {
         if(benchmark_iterations == 0) {
             /*
                 Standard mode:
-                Run the program normally, outputing the result to stdout
+                Run the program normally, outputting the result to stdout
             */
             std::chrono::microseconds total_time(0);
             {
@@ -98,11 +99,14 @@ struct VideoDetectionMain {
                 // Use the n_workers given as input as the limit
                 // Start from the bottom to get better speed and see concrete results faster
                 for(size_t nw = n_workers; nw >= 1; nw--) {
-                    std::chrono::microseconds total_time(0);
                     auto [filename, solution] = file;
+
+                    // Save the times in a vector to compute the variance
+                    vector<int64_t> times;
                     for(size_t i = 0; i < benchmark_iterations; i++) {
+                        std::chrono::microseconds time(0);
                         {
-                            cumulative_utimer timer(&total_time);
+                            cumulative_utimer timer(&time);
                             auto [frames, total_frames] = main_body(filename, nw);
                             // Check that the number of moving frames is correct
                             if(frames != solution) {
@@ -110,9 +114,17 @@ struct VideoDetectionMain {
                                 return 1;
                             }
                         }
+                        times.push_back(time.count());
                     }
-                    auto time = (total_time / benchmark_iterations).count();
-                    cout << argv[0] << "," << filename << "," << nw << "," << time << endl;
+                    // Compute average
+                    int64_t avg = (reduce(times.begin(), times.end(), 0.0) / (float)times.size());
+
+                    // Compute variance
+                    transform(times.begin(), times.end(), times.begin(), [&](auto i) { return (i - avg) * (i - avg); });
+                    int64_t var = sqrt(reduce(times.begin(), times.end(), 0.0) / (float)times.size());
+
+                    // Output to csv/out
+                    cout << argv[0] << "," << filename << "," << nw << "," << avg << "," << var << endl;
                 }
             }
             return 0;
