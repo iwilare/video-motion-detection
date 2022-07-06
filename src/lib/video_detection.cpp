@@ -5,6 +5,11 @@
 #include <limits>
 #include <opencv2/opencv.hpp>
 
+#include "kernels.cpp"
+
+// Change this compilation flag to select the kernel used to blur
+#define KERNEL AverageKernel
+
 using namespace cv;
 using namespace std;
 
@@ -38,16 +43,10 @@ vector<float> blur(const vector<vector<float>>& kernel, const vector<vector<floa
     return result;
 }
 
-const float f1_9 = 1.0 / 9.0;
 
-const vector<vector<float>> AverageKernel = {
-    {f1_9, f1_9, f1_9},
-    {f1_9, f1_9, f1_9},
-    {f1_9, f1_9, f1_9},
-};
 
 vector<float> preprocess_blur_greyscale(const Mat& frame) {
-    return blur(AverageKernel, greyscale(frame));
+    return blur(KERNEL, greyscale(frame));
 }
 
 size_t count_differences(const vector<float>& a, const vector<float>& b, float threshold) {
@@ -66,7 +65,7 @@ bool is_motion_processed_frame(const vector<float>& background_blur_grey, const 
 // Composition of the three conceptual stages to process a frame
 bool is_motion_frame(const vector<float>& background_blur_grey, const Mat& f, float threshold, float detection_percentage) {
     auto g = greyscale(f);
-    auto b = blur(AverageKernel, g);
+    auto b = blur(KERNEL, g);
     auto d = is_motion_processed_frame(background_blur_grey, b, threshold, detection_percentage);
     return d;
 }

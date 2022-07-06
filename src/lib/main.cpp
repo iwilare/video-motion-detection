@@ -94,7 +94,7 @@ struct VideoDetectionMain {
                 {"videos/test_mid.mp4", 190},
                 {"videos/test_small.mp4", 113}};
             // Follow the Unix philosophy and write everything to stdout
-            cout << "name,filename,nworkers,time" << endl;
+            cout << "name,filename,nworkers,avg,var" << endl;
             for(auto& file : filenames) {
                 // Use the n_workers given as input as the limit
                 // Start from the bottom to get better speed and see concrete results faster
