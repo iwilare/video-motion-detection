@@ -14,8 +14,7 @@ struct VideoDetectionSequential : VideoDetectionMain {
                  vector<float> background_blur_grey,
                  float detection_percentage,
                  float difference_threshold,
-                 size_t workers,
-                 bool set_thread_affinity) {
+                 size_t workers) {
         size_t motion_frames = 0;
 
         Mat frame;

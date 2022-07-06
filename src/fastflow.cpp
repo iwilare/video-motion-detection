@@ -66,8 +66,7 @@ struct VideoDetectionFastFlow : VideoDetectionMain {
                  vector<float> background_blur_grey,
                  float detection_percentage,
                  float difference_threshold,
-                 size_t n_workers,
-                 bool set_thread_affinity) {
+                 size_t n_workers) {
         atomic<size_t> total_motion_frames;
 
         // Reserve one worker for the emitter
@@ -89,6 +88,10 @@ struct VideoDetectionFastFlow : VideoDetectionMain {
             cerr << "Error running FastFlow farm" << endl;
             exit(1);
         }
+
+        #ifdef TRACE_FASTFLOW
+        motion_detection_farm.ffStats(std::cout);
+        #endif
 
         return total_motion_frames;
     }

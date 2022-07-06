@@ -14,8 +14,7 @@ struct VideoDetectionOmp : VideoDetectionMain {
                  vector<float> background_blur_grey,
                  float detection_percentage,
                  float difference_threshold,
-                 size_t n_workers,
-                 bool set_thread_affinity) {
+                 size_t n_workers) {
         size_t motion_frames = 0;
 
         #pragma omp parallel num_threads(n_workers)

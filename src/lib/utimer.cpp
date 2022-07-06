@@ -25,8 +25,9 @@ public:
     cumulative_utimer(std::chrono::microseconds* result) : begin(std::chrono::high_resolution_clock::now()), result(result) {}
 
     // The timer is stopped manually and summed up to the pointer given.
-    void stop() {
+    std::chrono::microseconds stop() {
         auto end = std::chrono::high_resolution_clock::now();
         *result += std::chrono::duration_cast<std::chrono::microseconds>(end - begin);
+        return std::chrono::duration_cast<std::chrono::microseconds>(end - begin);
     }
 };

@@ -17,8 +17,7 @@ struct VideoDetectionThreads : VideoDetectionMain {
                  vector<float> background_blur_grey,
                  float detection_percentage,
                  float difference_threshold,
-                 size_t n_workers,
-                 bool set_thread_affinity) {
+                 size_t n_workers) {
         atomic<size_t> total_motion_frames(0);
         shared_queue<Mat> queue;
 
@@ -51,8 +50,9 @@ struct VideoDetectionThreads : VideoDetectionMain {
 
         for(size_t i = 0; i < thread_workers; i++) {
             workers[i] = thread(worker);
-            if(set_thread_affinity)
-                pin_thread_to_cpu(i, workers[i]);
+#ifdef THREAD_AFFINITY
+            pin_thread_to_cpu(i, workers[i]);
+#endif
         }
 
         {
