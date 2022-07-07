@@ -17,7 +17,8 @@ struct VideoDetectionOmp : VideoDetectionMain {
                  size_t n_workers) {
         size_t motion_frames = 0;
 
-        #pragma omp parallel num_threads(n_workers)
+        // Take into account the emitter worker
+        #pragma omp parallel num_threads(n_workers <= 1 ? 1 : n_workers - 1)
         #pragma omp single // Only the emitter reads frames
         while(true) {
             Mat frame; // Ensure that frame is directly in the scope of the task

@@ -15,7 +15,13 @@ using namespace std;
 #define DEFAULT_DETECTION_PERCENTAGE 0.05
 #define DEFAULT_DIFFERENCE_THRESHOLD 0.05
 
-#define BENCHMARK_MAX_THREADS 64
+ // Example solutions by running with the default settings
+#define BENCHMARK_FILENAMES  {\
+                              {"videos/test_small.mp4", 113}, \
+                             };
+                             // {"videos/test_big.mp4", 790},
+                             // {"videos/test_mid.mp4", 190},
+
 
 /*
     Thin wrapper class to provide a uniform interface for
@@ -89,10 +95,7 @@ struct VideoDetectionMain {
                 Benchmark mode:
                 Ignore the input file given and search for the datasets in the videos/ folder.
             */
-            vector<pair<string,size_t>> filenames =
-               {{"videos/test_big.mp4", 790}, // Example solutions by running with the default settings
-                {"videos/test_mid.mp4", 190},
-                {"videos/test_small.mp4", 113}};
+            vector<pair<string,size_t>> filenames = BENCHMARK_FILENAMES;
             // Follow the Unix philosophy and write everything to stdout
             cout << "name,filename,nworkers,avg,var" << endl;
             for(auto& file : filenames) {
