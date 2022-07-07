@@ -23,6 +23,12 @@ set_property(TARGET fastflow PROPERTY CXX_STANDARD 20)
 target_compile_options( fastflow PRIVATE -O3 -Wall)
 target_link_libraries( fastflow ${OpenCV_LIBS} pthread )
 
+# FastFlow blocking
+add_executable( fastflow_blocking src/fastflow_blocking.cpp )
+set_property(TARGET fastflow_blocking PROPERTY CXX_STANDARD 20)
+target_compile_options( fastflow_blocking PRIVATE -O3 -Wall)
+target_link_libraries( fastflow_blocking ${OpenCV_LIBS} pthread )
+
 # Threads
 add_executable( threads src/threads.cpp )
 set_property(TARGET threads PROPERTY CXX_STANDARD 20)

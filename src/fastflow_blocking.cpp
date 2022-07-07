@@ -88,6 +88,9 @@ struct VideoDetectionFastFlow : VideoDetectionMain {
             make_unique<Emitter>(video),
             nullptr); // No collector is required
 
+        // Use blocking queues as it considerably improves performance
+        motion_detection_farm.blocking_mode();
+
         if(motion_detection_farm.run_and_wait_end() < 0) {
             cerr << "Error running FastFlow farm" << endl;
             exit(1);
