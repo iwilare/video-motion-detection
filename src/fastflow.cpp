@@ -14,11 +14,17 @@ using namespace ff;
 
 struct Emitter : ff_monode_t<Mat> {
     VideoCapture video;
-    Emitter(VideoCapture&& video) : video(video) {}
+    Emitter(VideoCapture video) : video(video) {}
     Mat* svc(Mat*) {
-        Mat frame;
-        for(video >> frame; !frame.empty(); video >> frame)
-            ff_send_out(new Mat(move(frame)));
+        while(true) {
+            Mat* frame = new Mat();
+            video >> *frame;
+            if(frame->empty()) {
+                delete frame;
+                break;
+            }
+            ff_send_out(frame);
+        }
         return EOS;
     }
 };
@@ -79,9 +85,10 @@ struct VideoDetectionFastFlow : VideoDetectionMain {
 
         ff_Farm<void, void> motion_detection_farm(
             move(workers),
-            make_unique<Emitter>(move(video)),
+            make_unique<Emitter>(video),
             nullptr); // No collector is required
 
+        // Use blocking queues as it considerably improves performance
         motion_detection_farm.blocking_mode();
 
         if(motion_detection_farm.run_and_wait_end() < 0) {
