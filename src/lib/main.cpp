@@ -97,13 +97,13 @@ struct VideoDetectionMain {
             */
             vector<pair<string,size_t>> filenames = BENCHMARK_FILENAMES;
             // Follow the Unix philosophy and write everything to stdout
-            cout << "name,filename,nworkers,avg,var" << endl;
+            cout << "name,filename,nworkers,avg,std" << endl;
             for(auto& file : filenames) {
                 // Use the n_workers given as input as the limit
                 for(size_t nw = 1; nw <= n_workers; nw++) {
                     auto [filename, solution] = file;
 
-                    // Save the times in a vector to compute the variance
+                    // Save the times in a vector to compute the standard deviation
                     vector<int64_t> times;
                     for(size_t i = 0; i < benchmark_iterations; i++) {
                         std::chrono::microseconds time(0);
@@ -121,12 +121,12 @@ struct VideoDetectionMain {
                     // Compute average
                     int64_t avg = (reduce(times.begin(), times.end(), 0.0) / (float)times.size());
 
-                    // Compute variance
+                    // Compute standard deviation
                     transform(times.begin(), times.end(), times.begin(), [&](auto i) { return (i - avg) * (i - avg); });
-                    int64_t var = sqrt(reduce(times.begin(), times.end(), 0.0) / (float)times.size());
+                    int64_t std = sqrt(reduce(times.begin(), times.end(), 0.0) / (float)times.size());
 
                     // Output to csv/out
-                    cout << argv[0] << "," << filename << "," << nw << "," << avg << "," << var << endl;
+                    cout << argv[0] << "," << filename << "," << nw << "," << avg << "," << std << endl;
                 }
             }
             return 0;
