@@ -23,6 +23,7 @@ int main(int argn, char** argv) {
     // Read arguments from command line
     get_arguments(argn, argv, &filename, &difference_threshold, &detection_percentage, &n_workers, &benchmarks);
 
+    std::chrono::microseconds total_time(0);
     std::chrono::microseconds total_open_time(0);
     std::chrono::microseconds total_init_time(0);
     std::chrono::microseconds total_background_read_time(0);
@@ -38,6 +39,8 @@ int main(int argn, char** argv) {
     size_t iterations = n_workers; // Use the number of threads as the number of iterations
     size_t total_frames = -1; // Initialize at each iteration
 
+    //{
+    cumulative_manual_utimer total_timer(&total_time);
     for(size_t i = 0; i < iterations; i++) {
         //{
         cumulative_manual_utimer init_time(&total_init_time);
@@ -115,12 +118,13 @@ int main(int argn, char** argv) {
 
         std::cout << i + 1 << " / " << iterations << ", = " << motion_frames << std::endl;
     }
+    total_timer.stop();
+    // }
 
     auto counts = total_frames * iterations;
 
     auto processing_time = total_greyscale_time + total_blur_time + total_detection_time;
     auto total_one_frame = total_read_time + processing_time;
-    auto total_time = total_open_time + total_preprocess_time + total_one_frame * total_frames;
 
     std::cout << "Avg 1 frame read time:       " << (total_read_time / counts).count() << std::endl;
     std::cout << "Avg 1 frame greyscale time:  " << (total_greyscale_time / counts).count() << std::endl;
@@ -132,7 +136,5 @@ int main(int argn, char** argv) {
     std::cout << "Avg open time:               " << (total_open_time / iterations).count() << std::endl;
     std::cout << "Avg background read time:    " << (total_background_read_time / iterations).count() << std::endl;
     std::cout << "Avg background process time: " << (total_preprocess_time / iterations).count() << std::endl;
-    //std::cout << "Avg background blur time:    " << (total_background_blur_time / iterations).count() << std::endl;
-    //std::cout << "Avg background grey time:    " << (total_background_greyscale_time / iterations).count() << std::endl;
     std::cout << "Avg total time:              " << (total_time / iterations).count() << std::endl;
 }

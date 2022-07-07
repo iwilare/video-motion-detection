@@ -97,7 +97,7 @@ struct VideoDetectionMain {
             cout << "name,filename,nworkers,avg,var" << endl;
             for(auto& file : filenames) {
                 // Use the n_workers given as input as the limit
-                for(size_t nw = 1; nw <= nworkers; nw++) {
+                for(size_t nw = 1; nw <= n_workers; nw++) {
                     auto [filename, solution] = file;
 
                     // Save the times in a vector to compute the variance
