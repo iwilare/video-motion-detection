@@ -29,17 +29,23 @@ set_property(TARGET fastflow_blocking PROPERTY CXX_STANDARD 20)
 target_compile_options( fastflow_blocking PRIVATE -O3 -Wall)
 target_link_libraries( fastflow_blocking ${OpenCV_LIBS} pthread )
 
+# FastFlow blocking no mapping
+add_executable( fastflow_blocking_no_map src/fastflow_blocking_no_map.cpp )
+set_property(TARGET fastflow_blocking_no_map PROPERTY CXX_STANDARD 20)
+target_compile_options( fastflow_blocking_no_map PRIVATE -O3 -Wall)
+target_link_libraries( fastflow_blocking_no_map ${OpenCV_LIBS} pthread )
+
 # Threads
 add_executable( threads src/threads.cpp )
 set_property(TARGET threads PROPERTY CXX_STANDARD 20)
 target_compile_options( threads PRIVATE -O3 -Wall)
 target_link_libraries( threads ${OpenCV_LIBS} pthread )
 
-# Threads_affinity
-add_executable( threads_affinity src/threads_affinity.cpp )
-set_property(TARGET threads_affinity PROPERTY CXX_STANDARD 20)
-target_compile_options( threads_affinity PRIVATE -O3 -Wall)
-target_link_libraries( threads_affinity ${OpenCV_LIBS} pthread )
+# Threads_pinned
+add_executable( threads_pinned src/threads_pinned.cpp )
+set_property(TARGET threads_pinned PROPERTY CXX_STANDARD 20)
+target_compile_options( threads_pinned PRIVATE -O3 -Wall)
+target_link_libraries( threads_pinned ${OpenCV_LIBS} pthread )
 
 # OpenMP
 add_executable( omp src/omp.cpp )

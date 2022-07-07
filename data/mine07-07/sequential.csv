@@ -1,0 +1,2 @@
+name,filename,nworkers,avg,var
+bin/sequential,videos/test_small.mp4,1,930147,38446
