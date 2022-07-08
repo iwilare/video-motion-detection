@@ -1,2 +1,0 @@
-name,filename,nworkers,avg,var
-bin/sequential,videos/test_small.mp4,1,3923970,439189

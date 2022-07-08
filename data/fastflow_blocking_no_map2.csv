@@ -1,2 +1,0 @@
-name,filename,nworkers,avg,std
-bin/fastflow_blocking_no_map,videos/test_big.mp4,1,79047648,3985048
