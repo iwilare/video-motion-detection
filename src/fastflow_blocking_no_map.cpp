@@ -67,7 +67,7 @@ struct Worker : ff_node_t<Mat,void> {
     }
 };
 
-struct VideoDetectionFastFlow : VideoDetectionMain {
+struct VideoDetectionFastFlowBlockingNoMap : VideoDetectionMain {
     size_t logic(VideoCapture video,
                  vector<float> background_blur_grey,
                  float detection_percentage,
@@ -108,5 +108,5 @@ struct VideoDetectionFastFlow : VideoDetectionMain {
 };
 
 int main(int argn, char** argv) {
-    return VideoDetectionFastFlow().main(argn, argv);
+    return VideoDetectionFastFlowBlockingNoMap().main(argn, argv);
 }

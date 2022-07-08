@@ -16,12 +16,11 @@ using namespace std;
 #define DEFAULT_DIFFERENCE_THRESHOLD 0.05
 
  // Example solutions by running with the default settings
-#define BENCHMARK_FILENAMES  {\
-                                {"videos/test_big.mp4", 790}, \
-                                {"videos/test_small.mp4", 113}, \
-                                {"videos/test_mid.mp4", 190},   \
-                             };
-
+#define BENCHMARK_FILENAMES {\
+                               {"videos/test_small.mp4", 113}, \
+                               {"videos/test_big.mp4", 790},   \
+                               {"videos/test_mid.mp4", 190},   \
+                            };
 
 /*
     Thin wrapper class to provide a uniform interface for
