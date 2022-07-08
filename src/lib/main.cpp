@@ -17,9 +17,9 @@ using namespace std;
 
  // Example solutions by running with the default settings
 #define BENCHMARK_FILENAMES {\
-                               {"videos/test_small.mp4", 113}, \
                                {"videos/test_big.mp4", 790},   \
                                {"videos/test_mid.mp4", 190},   \
+                               {"videos/test_small.mp4", 113}, \
                             };
 
 /*
