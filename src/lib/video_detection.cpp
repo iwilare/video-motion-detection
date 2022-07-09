@@ -5,10 +5,8 @@
 #include <limits>
 #include <opencv2/opencv.hpp>
 
+// Use the default KERNEL matrix provided here
 #include "kernels.cpp"
-
-// Change this compilation flag to select the kernel used to blur
-#define KERNEL AverageKernel
 
 using namespace cv;
 using namespace std;
@@ -43,9 +41,8 @@ vector<float> blur(const vector<vector<float>>& kernel, const vector<vector<floa
     return result;
 }
 
-
-
 vector<float> preprocess_blur_greyscale(const Mat& frame) {
+    // Use the default kernel KERNEL provided in kernel.cpp
     return blur(KERNEL, greyscale(frame));
 }
 
@@ -64,8 +61,6 @@ bool is_motion_processed_frame(const vector<float>& background_blur_grey, const 
 
 // Composition of the three conceptual stages to process a frame
 bool is_motion_frame(const vector<float>& background_blur_grey, const Mat& f, float threshold, float detection_percentage) {
-    auto g = greyscale(f);
-    auto b = blur(KERNEL, g);
-    auto d = is_motion_processed_frame(background_blur_grey, b, threshold, detection_percentage);
-    return d;
+    auto gb = preprocess_blur_greyscale(f);
+    return is_motion_processed_frame(background_blur_grey, gb, threshold, detection_percentage);
 }

@@ -9,7 +9,7 @@ using namespace std;
 // Parse and get the command line arguments.
 void get_arguments(int argn, char *argc[], string* filename, float* detection_percentage, float* difference_threshold, size_t* n_workers, size_t* benchmark) {
     // Check command line arguments
-    if(!(1 + 1 <= argn && argn <= 1 + 5)) {
+    if(argn == 0) {
         cout << "Usage: " << argc[0] << " <filename> [-d detection_percentage] [-t greyscale_difference_threshold] [-n number_of_workers]" << endl;
         cout << "     | " << argc[0] << " benchmark <n_repetitions> [-d detection_percentage] [-t greyscale_difference_threshold] [-n number_of_workers]" << endl;
         cout << "Example: " << argc[0] << " video.mp4 -d 0.3 -t 0.2 -n 4" << endl;
