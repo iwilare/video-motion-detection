@@ -14,14 +14,21 @@ int main(int argn, char** argv) {
     ios_base::sync_with_stdio(false);
 
     // Default values for arguments
-    string filename;
+    string filename("default.mp4");
     float detection_percentage = DEFAULT_DETECTION_PERCENTAGE;
     float difference_threshold = DEFAULT_DIFFERENCE_THRESHOLD;
-    size_t n_workers = 0; // Not needed here
-    size_t benchmarks = 0;
+    size_t iterations = 1;
+
+    // SPECIAL CONDITIONS TO ENABLE SPECIFIC MEASUREMENT BEHAVIOUR
+    bool PRINT_READ_TIMES = false;
+    bool GREY_AND_BLUR = true;
 
     // Read arguments from command line
-    get_arguments(argn, argv, &filename, &difference_threshold, &detection_percentage, &n_workers, &benchmarks);
+    int i = 1;
+    if(i < argn) filename = argv[i++];
+    if(i < argn) iterations = atoi(argv[i++]);
+    if(i < argn) PRINT_READ_TIMES = atoi(argv[i++]);
+    if(i < argn) GREY_AND_BLUR = atoi(argv[i++]);
 
     std::chrono::microseconds total_time(0);
     std::chrono::microseconds total_open_time(0);
@@ -36,18 +43,10 @@ int main(int argn, char** argv) {
     std::chrono::microseconds total_detection_time(0);
 
     size_t motion_frames = 0;
-    size_t iterations = 1; // Default number of iterations: 1
     size_t total_frames = 0; // Initialize at each iteration
 
     //{
     cumulative_manual_utimer total_timer(&total_time);
-
-    // Print the reading times with n_workers
-    bool PRINT_READ_TIMES = n_workers == 1 || n_workers == 2;
-
-    // Do work if n_workers<100, in any other case do it
-    bool GREY_AND_BLUR = nworkers != 2 && n_workers < 100;
-    if(n_workers >= 100) n_workers -= 100;
 
     if(PRINT_READ_TIMES) {
         iterations = 1;
