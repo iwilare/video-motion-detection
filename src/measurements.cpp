@@ -7,6 +7,8 @@
 #include "lib/main.cpp"
 #include "lib/video_detection.cpp"
 
+#define PRINT_READ_TIME 1
+
 using namespace cv;
 using namespace std;
 
@@ -72,7 +74,7 @@ int main(int argn, char** argv) {
         //}
         //{
         cumulative_manual_utimer background_blur_time(&total_background_blur_time);
-        auto background_blur_grey = blur(AverageKernel, g);
+        auto background_blur_grey = blur(KERNEL, g);
         background_blur_time.stop();
         //}
         preprocess_time.stop();
@@ -86,13 +88,19 @@ int main(int argn, char** argv) {
 
         while(true) {
             //{
-            cumulative_manual_utimer read_time(&total_read_time);
+            // Get the reading time separatedly in order to analyze it in detail
+            std::chrono::microseconds read_time(0);
+            cumulative_manual_utimer read_timer(&read_time);
             Mat frame;
             video >> frame;
             if(frame.empty())
                 break;
-            read_time.stop();
+            read_timer.stop();
             //}
+            total_read_time += read_time;
+            #if PRINT_READ_TIME
+            cout << read_time << endl;
+            #endif
 
             //{
             cumulative_manual_utimer greyscale_time(&total_greyscale_time);
@@ -102,7 +110,7 @@ int main(int argn, char** argv) {
 
             //{
             cumulative_manual_utimer blur_time(&total_blur_time);
-            auto b = blur(AverageKernel, g);
+            auto b = blur(KERNEL, g);
             blur_time.stop();
             //}
 
@@ -115,8 +123,6 @@ int main(int argn, char** argv) {
             if(d)
                 motion_frames++;
         }
-
-        std::cout << i + 1 << " / " << iterations << ", = " << motion_frames << std::endl;
     }
     total_timer.stop();
     // }
