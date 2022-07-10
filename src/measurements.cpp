@@ -83,9 +83,7 @@ int main(int argn, char** argv) {
         init_time.stop();
         //}
 
-        total_frames = video.get(cv::CAP_PROP_FRAME_COUNT);
         motion_frames = 0;
-        video.set(cv::CAP_PROP_POS_FRAMES, 0);
 
         while(true) {
             //{
