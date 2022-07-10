@@ -99,7 +99,7 @@ int main(int argn, char** argv) {
             //}
             total_read_time += read_time;
             #if PRINT_READ_TIME
-            cout << read_time << endl;
+            cout << read_time.count() << endl;
             #endif
 
             //{
