@@ -17,7 +17,7 @@ int main(int argn, char** argv) {
     string filename;
     float detection_percentage = DEFAULT_DETECTION_PERCENTAGE;
     float difference_threshold = DEFAULT_DIFFERENCE_THRESHOLD;
-    size_t n_workers = thread::hardware_concurrency();
+    size_t n_workers = 0; // Not needed here
     size_t benchmarks = 0;
 
     // Read arguments from command line
@@ -36,20 +36,20 @@ int main(int argn, char** argv) {
     std::chrono::microseconds total_detection_time(0);
 
     size_t motion_frames = 0;
-    size_t iterations = n_workers; // Use the number of threads as the number of iterations
-    size_t total_frames = -1; // Initialize at each iteration
+    size_t iterations = 1; // Default number of iterations: 1
+    size_t total_frames = 0; // Initialize at each iteration
 
     //{
     cumulative_manual_utimer total_timer(&total_time);
 
-    // Print the reading times if benchmark is enabled
-    bool PRINT_READ_TIMES = benchmarks == 1 || benchmarks == 2;
+    // Print the reading times with n_workers
+    bool PRINT_READ_TIMES = n_workers == 1 || n_workers == 2;
 
-    // Do work if benchmarks==2, in any other case do it
-    bool GREY_AND_BLUR = benchmarks ? benchmarks == 2 : true;
+    // Do work if n_workers==2, in any other case do it
+    bool GREY_AND_BLUR = n_workers ? n_workers == 2 : true;
 
     if(PRINT_READ_TIMES) {
-        iterations = 0;
+        iterations = 1;
         cout << "time" << endl; // For the .csv file
     }
 
@@ -93,6 +93,7 @@ int main(int argn, char** argv) {
         //}
 
         motion_frames = 0;
+        total_frames = 0; // The last iteration gives it the correct value
 
         while(true) {
 
@@ -105,7 +106,7 @@ int main(int argn, char** argv) {
             //}
             total_read_time += read_time;
             if(PRINT_READ_TIMES) {
-                cout << read_time << endl;
+                cout << read_time.count() << endl;
             }
 
             if(frame.empty()) {
@@ -133,6 +134,7 @@ int main(int argn, char** argv) {
 
             if(d)
                 motion_frames++;
+            total_frames++;
             }
         }
     }
@@ -145,6 +147,7 @@ int main(int argn, char** argv) {
     auto total_one_frame = total_read_time + processing_time;
 
     if(!PRINT_READ_TIMES) {
+    std::cout << "Filename:                    " << filename << std::endl;
     std::cout << "Avg 1 frame read time:       " << (total_read_time / counts).count() << std::endl;
     std::cout << "Avg 1 frame greyscale time:  " << (total_greyscale_time / counts).count() << std::endl;
     std::cout << "Avg 1 frame blur time:       " << (total_blur_time / counts).count() << std::endl;
