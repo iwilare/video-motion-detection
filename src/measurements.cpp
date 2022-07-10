@@ -45,8 +45,9 @@ int main(int argn, char** argv) {
     // Print the reading times with n_workers
     bool PRINT_READ_TIMES = n_workers == 1 || n_workers == 2;
 
-    // Do work if n_workers==2 or 3, in any other case do it
-    bool GREY_AND_BLUR = n_workers ? n_workers == 2 || n_workers == 3 : true;
+    // Do work if n_workers<100, in any other case do it
+    bool GREY_AND_BLUR = nworkers != 2 && n_workers < 100;
+    if(n_workers >= 100) n_workers -= 100;
 
     if(PRINT_READ_TIMES) {
         iterations = 1;
