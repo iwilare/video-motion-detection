@@ -7,9 +7,6 @@
 #include "lib/main.cpp"
 #include "lib/video_detection.cpp"
 
-// Uncomment to print the individual read times
-#define PRINT_READ_TIME 0
-
 using namespace cv;
 using namespace std;
 
@@ -44,6 +41,18 @@ int main(int argn, char** argv) {
 
     //{
     cumulative_manual_utimer total_timer(&total_time);
+
+    // Print the reading times if benchmark is enabled
+    bool PRINT_READ_TIMES = benchmarks == 1 || benchmarks == 2;
+
+    // Do work if benchmarks==2, in any other case do it
+    bool GREY_AND_BLUR = benchmarks ? benchmarks == 2 : true;
+
+    if(PRINT_READ_TIMES) {
+        iterations = 0;
+        cout << "time" << endl; // For the .csv file
+    }
+
     for(size_t i = 0; i < iterations; i++) {
         //{
         cumulative_manual_utimer init_time(&total_init_time);
@@ -86,21 +95,24 @@ int main(int argn, char** argv) {
         motion_frames = 0;
 
         while(true) {
-            //{
-            // Get the reading time separatedly in order to analyze it in detail
+
             std::chrono::microseconds read_time(0);
+            //{
             cumulative_manual_utimer read_timer(&read_time);
             Mat frame;
             video >> frame;
-            if(frame.empty())
-                break;
             read_timer.stop();
             //}
             total_read_time += read_time;
-            #if PRINT_READ_TIME
-            cout << read_time.count() << endl;
-            #endif
+            if(PRINT_READ_TIMES) {
+                cout << read_time << endl;
+            }
 
+            if(frame.empty()) {
+                break;
+            }
+
+            if(GREY_AND_BLUR) {
             //{
             cumulative_manual_utimer greyscale_time(&total_greyscale_time);
             auto g = greyscale(frame);
@@ -121,6 +133,7 @@ int main(int argn, char** argv) {
 
             if(d)
                 motion_frames++;
+            }
         }
     }
     total_timer.stop();
@@ -131,6 +144,7 @@ int main(int argn, char** argv) {
     auto processing_time = total_greyscale_time + total_blur_time + total_detection_time;
     auto total_one_frame = total_read_time + processing_time;
 
+    if(!PRINT_READ_TIMES) {
     std::cout << "Avg 1 frame read time:       " << (total_read_time / counts).count() << std::endl;
     std::cout << "Avg 1 frame greyscale time:  " << (total_greyscale_time / counts).count() << std::endl;
     std::cout << "Avg 1 frame blur time:       " << (total_blur_time / counts).count() << std::endl;
@@ -142,4 +156,5 @@ int main(int argn, char** argv) {
     std::cout << "Avg background read time:    " << (total_background_read_time / iterations).count() << std::endl;
     std::cout << "Avg background process time: " << (total_preprocess_time / iterations).count() << std::endl;
     std::cout << "Avg total time:              " << (total_time / iterations).count() << std::endl;
+    }
 }
