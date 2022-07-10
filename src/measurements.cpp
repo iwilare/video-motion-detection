@@ -7,7 +7,8 @@
 #include "lib/main.cpp"
 #include "lib/video_detection.cpp"
 
-#define PRINT_READ_TIME 1
+// Uncomment to print the individual read times
+#define PRINT_READ_TIME 0
 
 using namespace cv;
 using namespace std;
