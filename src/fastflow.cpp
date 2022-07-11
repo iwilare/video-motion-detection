@@ -93,6 +93,19 @@ struct VideoDetectionFastFlow : VideoDetectionMain {
             exit(1);
         }
 
+        // Compile time options
+
+        // Enable blocking mode for queues
+        #ifdef FASTFLOW_BLOCKING_MODE
+        motion_detection_farm.blocking_mode();
+        #endif
+
+        // Disable thread pinning on CPU cores
+        #ifdef FASTFLOW_NO_MAPPING
+        motion_detection_farm.no_mapping();
+        #endif
+
+        // Statistics and metrics of the farm
         #ifdef TRACE_FASTFLOW
         motion_detection_farm.ffStats(std::cout);
         #endif
