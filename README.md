@@ -11,7 +11,7 @@ make
 
 Upon successful compilation the resulting executables can be found in `bin/`, and can be tested with the examples provided in `video/`.
 
-# Usage
+### Usage
 
 ```
 bin/threads <filename> [options]
@@ -29,7 +29,7 @@ bin/threads <filename> [options]
 
 Standard usage, outputting the number of motion frames over the total amount of frames along with an indication of the total microseconds taken. Arguments can be optional and the default values will be used, but must be provided in the given order
 
-## Example
+### Example
 
 Test with 0.02 greyscale threshold difference, >=30% differing pixels, default H1 average kernel, using 4 as total number of workers (1 emitter + 3 workers):
 ```
@@ -43,7 +43,7 @@ bin/fastflow videos/test_mid.mp4 -d 0.02 -t 0.3 -n 4
 
 The kernel used in the processing can be specified with the `KERNEL` compilation flag, selecting between `H1,H2,H3,H4` or defining a new one in `src/lib/kernels.cpp`.
 
-## Benchmark mode usage
+### Benchmark mode usage
 
 ```
 bin/threads benchmark <filename> <n_repetitions> [-n max_par_degree] [options]
@@ -57,7 +57,7 @@ Starts the video detection program in benchmark mode. The files in the `video/` 
 
 All relevant benchmarks on all programs can be performed using the `./benchmark.sh` script.
 
-# Measurements usage
+## Measurements usage
 
 Usage for the measurement program, used to obtain values for the sequential version and analyze the read operation in detail.
 
@@ -75,7 +75,7 @@ A concrete usage example can be found in the `./measurements.sh` script.
 ./measurements.sh
 ```
 
-# Requirements
+## Requirements
 
 It is required for the following dependencies to be installed:
 
@@ -83,7 +83,7 @@ It is required for the following dependencies to be installed:
 - OpenCV (4.4.5)
 - OpenMP (4.1.2)
 
-# File structure
+## File structure
 
 A brief overview of the main files contained in the project is presented in the following tree.
 
@@ -111,6 +111,6 @@ A brief overview of the main files contained in the project is presented in the 
 +-- measurements.sh: script to measure sequential and read time on all videos.
 ```
 
-# Visualization
+## Visualization
 
 All plots and visualizations used in the project report are reproducible using the Jupyter notebook provided in `plot/plot.ipynb`.
