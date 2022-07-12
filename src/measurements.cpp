@@ -19,13 +19,16 @@ int main(int argn, char** argv) {
     float difference_threshold = DEFAULT_DIFFERENCE_THRESHOLD;
     size_t iterations = 1;
 
-    // SPECIAL CONDITIONS TO ENABLE SPECIFIC MEASUREMENT BEHAVIOUR
+    // Special conditions for measuring read time behaviour,
+    // with and without workload, with and without printing
+    // a single example run with all measurements.
     bool PRINT_READ_TIMES = false;
     bool GREY_AND_BLUR = true;
 
     // Read arguments from command line
     int i = 1;
     if(i < argn) filename = argv[i++];
+    if(i < argn) iterations = atoi(argv[i++]);
     if(i < argn) iterations = atoi(argv[i++]);
     if(i < argn) PRINT_READ_TIMES = atoi(argv[i++]);
     if(i < argn) GREY_AND_BLUR = atoi(argv[i++]);

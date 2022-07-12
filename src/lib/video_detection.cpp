@@ -11,6 +11,7 @@
 using namespace cv;
 using namespace std;
 
+// Complexity: O(wh) with w=width and h=height of the frame
 vector<vector<float>> greyscale(const Mat& a) {
     vector<vector<float>> result(a.rows, vector<float>(a.cols));
     for (auto i = 0; i < a.rows; i++) {
@@ -22,6 +23,7 @@ vector<vector<float>> greyscale(const Mat& a) {
     return result;
 }
 
+// Complexity: O(whmn) with w=width and h=height of the frame and (m,n) kernel size
 vector<float> blur(const vector<vector<float>>& kernel, const vector<vector<float>>& a) {
     vector<float> result(a.size() * a[0].size());
     for (size_t i = 0; i < a.size(); i++) {
@@ -41,11 +43,13 @@ vector<float> blur(const vector<vector<float>>& kernel, const vector<vector<floa
     return result;
 }
 
+// Combine blur and kernel functions.
 vector<float> preprocess_blur_greyscale(const Mat& frame) {
     // Use the default kernel KERNEL provided in kernel.cpp
     return blur(KERNEL, greyscale(frame));
 }
 
+// Count the number of values differing more than threshold
 size_t count_differences(const vector<float>& a, const vector<float>& b, float threshold) {
     size_t count = 0;
     for (size_t i = 0; i < a.size(); i++)
