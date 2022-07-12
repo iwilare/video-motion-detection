@@ -10,10 +10,23 @@ using namespace std;
 void get_arguments(int argn, char *argc[], string* filename, float* detection_percentage, float* difference_threshold, size_t* n_workers, size_t* benchmark) {
     // Check command line arguments
     if(argn <= 1) {
-        cout << "Usage: " << argc[0] << " <filename> [-d detection_percentage] [-t greyscale_difference_threshold] [-n number_of_workers]" << endl;
-        cout << "     | " << argc[0] << " benchmark <n_repetitions> [-d detection_percentage] [-t greyscale_difference_threshold] [-n number_of_workers]" << endl;
-        cout << "Example: " << argc[0] << " video.mp4 -d 0.3 -t 0.2 -n 4" << endl;
-        exit(1);
+        cout << "Usage: " << argc[0] << " <filename> [options]\n";
+        cout << "[options]:\n";
+        cout << "  [-d detection_percentage]:\n";
+        cout << "    percentage of differing pixels  (default=0.05)\n";
+        cout << "\n";
+        cout << "  [-t greyscale_difference_threshold]:\n";
+        cout << "    greyscale difference to consider a pixel as changed (default=0.05)\n";
+        cout << "\n";
+        cout << "  [-n number_of_workers]:\n";
+        cout << "    total parallelism degree/resources used in the application\n";
+        cout << "    (default=<parallelism degree provided by STL)\n";
+        cout << "\n";
+        cout << "Example:\n";
+        cout << "  " << argc[0] << " videos/test_mid.mp4 -d 0.02 -t 0.3 -n 4";
+        cout << "Benchmark mode:\n";
+        cout << "  " << argc[0] << " benchmark <filename> <n_repetitions> [-n max_par_degree] [options]\n";
+        exit(0);
     }
     int i = 1;
 
