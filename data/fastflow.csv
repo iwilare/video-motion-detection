@@ -1,6 +1,6 @@
 name,filename,nworkers,avg,std
-bin/fastflow,videos/test_big.mp4,1,90717773,20458314
-bin/fastflow,videos/test_big.mp4,2,90708987,20306393
+bin/fastflow,videos/test_big.mp4,1,70790612,20458314
+bin/fastflow,videos/test_big.mp4,2,69735197,20306393
 bin/fastflow,videos/test_big.mp4,3,51699367,2500957
 bin/fastflow,videos/test_big.mp4,4,38002881,2301490
 bin/fastflow,videos/test_big.mp4,5,29179108,651879
@@ -34,8 +34,8 @@ bin/fastflow,videos/test_big.mp4,32,14589323,315045
 bin/fastflow,videos/test_big.mp4,33,15066447,430768
 bin/fastflow,videos/test_big.mp4,34,15114659,292935
 bin/fastflow,videos/test_big.mp4,35,15198893,326303
-bin/fastflow,videos/test_mid.mp4,1,14053519,3442299
-bin/fastflow,videos/test_mid.mp4,2,14045805,3447427
+bin/fastflow,videos/test_mid.mp4,1,10742384,3442299
+bin/fastflow,videos/test_mid.mp4,2,10750961,3447427
 bin/fastflow,videos/test_mid.mp4,3,8890502,29522
 bin/fastflow,videos/test_mid.mp4,4,6183645,209724
 bin/fastflow,videos/test_mid.mp4,5,4669250,122805
@@ -69,8 +69,8 @@ bin/fastflow,videos/test_mid.mp4,32,2607728,55946
 bin/fastflow,videos/test_mid.mp4,33,2614660,48559
 bin/fastflow,videos/test_mid.mp4,34,2724077,117709
 bin/fastflow,videos/test_mid.mp4,35,2657846,52939
-bin/fastflow,videos/test_small.mp4,1,3304887,779677
-bin/fastflow,videos/test_small.mp4,2,3304463,791152
+bin/fastflow,videos/test_small.mp4,1,2661198,779677
+bin/fastflow,videos/test_small.mp4,2,2654326,791152
 bin/fastflow,videos/test_small.mp4,3,2081922,8076
 bin/fastflow,videos/test_small.mp4,4,1455459,10445
 bin/fastflow,videos/test_small.mp4,5,1119577,20880
