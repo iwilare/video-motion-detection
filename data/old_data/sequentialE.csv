@@ -1,4 +1,0 @@
-name,filename,nworkers,avg,std
-bin/sequential,videos/test_big.mp4,1,57872496,797374
-bin/sequential,videos/test_mid.mp4,1,9082561,52054
-bin/sequential,videos/test_small.mp4,1,2133267,14036
