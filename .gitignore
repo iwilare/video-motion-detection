@@ -12,5 +12,3 @@ _deps
 bin/*
 build/*
 .vscode/*
-*.png
-*.svg
