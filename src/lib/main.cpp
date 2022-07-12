@@ -17,9 +17,9 @@ using namespace std;
 
  // Example solutions by running with the default settings
 #define BENCHMARK_FILENAMES {\
-                               {"videos/test_big.mp4", 790},   \
-                               {"videos/test_mid.mp4", 190},   \
                                {"videos/test_small.mp4", 113}, \
+                               {"videos/test_mid.mp4", 190},   \
+                               {"videos/test_big.mp4", 790},   \
                             };
 
 /*
@@ -92,7 +92,7 @@ struct VideoDetectionMain {
         } else {
             /*
                 Benchmark mode:
-                Ignore the input file given and search for the datasets in the videos/ folder.
+                Ignore the input file given and use the hardcoded datasets in the videos/ folder.
             */
             vector<pair<string,size_t>> filenames = BENCHMARK_FILENAMES;
             // Follow the Unix philosophy and write everything to stdout
