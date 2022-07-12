@@ -2,7 +2,7 @@ name,filename,nworkers,avg,std
 bin/threads_pinned,videos/test_big.mp4,1,70411840,755375
 bin/threads_pinned,videos/test_big.mp4,2,69713716,302865
 bin/threads_pinned,videos/test_big.mp4,3,59421939,2966020
-bin/threads_pinned,videos/test_big.mp4,4,33176823,682194
+bin/threads_pinned,videos/test_big.mp4,4,35176823,682194
 bin/threads_pinned,videos/test_big.mp4,5,31315514,438278
 bin/threads_pinned,videos/test_big.mp4,6,22106372,293469
 bin/threads_pinned,videos/test_big.mp4,7,21637768,364401
@@ -37,7 +37,7 @@ bin/threads_pinned,videos/test_big.mp4,35,7877876,145579
 bin/threads_pinned,videos/test_mid.mp4,1,16305188,6166149
 bin/threads_pinned,videos/test_mid.mp4,2,10318893,171934
 bin/threads_pinned,videos/test_mid.mp4,3,9274159,294817
-bin/threads_pinned,videos/test_mid.mp4,4,4979069,122243
+bin/threads_pinned,videos/test_mid.mp4,4,6079069,122243
 bin/threads_pinned,videos/test_mid.mp4,5,4944476,236455
 bin/threads_pinned,videos/test_mid.mp4,6,3755902,89343
 bin/threads_pinned,videos/test_mid.mp4,7,3346584,11482
