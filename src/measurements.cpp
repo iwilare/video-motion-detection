@@ -29,7 +29,6 @@ int main(int argn, char** argv) {
     int i = 1;
     if(i < argn) filename = argv[i++];
     if(i < argn) iterations = atoi(argv[i++]);
-    if(i < argn) iterations = atoi(argv[i++]);
     if(i < argn) PRINT_READ_TIMES = atoi(argv[i++]);
     if(i < argn) GREY_AND_BLUR = atoi(argv[i++]);
 
