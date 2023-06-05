@@ -1,0 +1,361 @@
+\documentclass{article}
+\usepackage[a4paper, total={5.5in, 8.5in}]{geometry}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{geometry}
+\usepackage{hyperref}
+\usepackage{listing}
+\usepackage{minted}
+\usepackage{csquotes}
+\usepackage{natbib}
+\usepackage{subfigure}
+\usepackage{dirtree}
+\usepackage{titlesec}
+
+\usepackage[clean]{svg}
+
+\usepackage{xcolor}
+\usepackage{etoolbox}
+
+
+% This is required to capitalize them
+\def\chapterautorefname{Chapter}%
+\def\sectionautorefname{Section}%
+\def\subsectionautorefname{Subsection}%
+\def\subsubsectionautorefname{Subsubsection}%
+\def\paragraphautorefname{Paragraph}%
+\def\tableautorefname{Table}%
+\def\equationautorefname{Equation}%
+
+
+\renewcommand\DTstyle{\rmfamily}
+
+\definecolor{pisa}{RGB}{0, 100, 150}
+\hypersetup{
+    colorlinks=true,
+    linkcolor=pisa,    
+    urlcolor=pisa,
+    citecolor=pisa,
+}
+
+\begin{document}
+%\newgeometry{top=1.66cm}
+%\begin{figure}[t]
+%    \centering\includegraphics[width=0.3\textwidth]{logo}
+%\end{figure}
+\begin{center}
+	\textsc{\large{Parallel~and~Distributed~Systems:~Paradigms~and~Models\\}}
+	\textnormal{ \large{Università di Pisa, Department of Computer Science\\}}
+	\vspace{3mm}
+	\textnormal{ \Large{Project Report -- Video Motion Detection\\}}
+	\vspace{1mm}
+	\textnormal{ \large{2021/2022\\}}
+	\vspace{3mm}
+	\textnormal{ \Large{\textit{Andrea Laretto}} \Large{(619624)\\}}
+\end{center}
+
+\setlength{\parindent}{0em}
+
+\section{Introduction}
+This report analyzes and presents some parallel implementations of the video motion detection problem, one implemented with the \textsf{C++} threads of the Standard Template Library (STL) and one using the \textsf{FastFlow} parallel programming framework. A third implementation using the \textsf{OpenMP} framework is also presented for comparison.
+
+
+%\section{Problem description}
+
+%The video detection problem consists in, given a stream of frames in a video, applying the grayscale and blur effects to the frames and comparing them with the video background, which is taken to be the first frame of the video. The comparison with the background is performed with a simple difference of the blurred greyscale values between the two pictures, with a certain threshold difference $T$. Although not present in the original description problem, this additional parameter was introduced to reduce the effect of camera noise in the video. If the number of pixels differing more than $T$ is greater than a detection percentage $P$ over the total pixels, then the frame is considered a \emph{motion frame}. The objective is to compute and output the total amount of motion frames in the video.
+
+\section{Problem analysis}\label{sec:problemanalysis}
+
+The full problem description is omitted here for brevity, and we just add some brief preliminary considerations. Although not present in the original description problem, an additional parameter $T$ was assumed, representing the threshold for greyscale pixels to be considered as different. This was introduced to reduce the effect of camera noise in the video when comparing frames with the background. Furthermore, it is reasonable to assume that the videos must be read from a source using a streaming approach, for example by loading each frame from a file or by retrieving it from a live camera feed, and we consider the case where frames are not already loaded in memory and are not buffered at the beginning of the computation.
+
+The objective is to compute and output the total amount of motion frames in the video. As a first consideration, we can notice how the output required by the problem  immediately leaves room for optimization: no ordering on the frames is needed and the computations performed on each frame are independent of each other, except for the initial background bottleneck. Therefore, this case study is an example of an \emph{embarassingly parallel problem}. 
+
+In our analysis, the processing of each frame can be subdivided into the composition of four different functions, and these conceptual stages will be referred to as follows:
+\begin{itemize}
+    \item $R$: \emph{read} a frame from the input stream;
+    \item $G$: \emph{greyscale} the frame by averaging of the 3 RGB channels of the frame, transforming it into a matrix of scalar values;
+    \item $B$: \emph{blur} the frame by applying a convolution with a blur kernel over the image;
+    \item $D$: compute the pixel-wise \emph{difference} between the processed frame and the first frame of the video (with difference threshold $T$), and check whether the total number of differing pixels over the total is greater than $P\%$.
+\end{itemize}
+
+Among the four functions considered, the work performed by $R$ cannot be parallelized since it performs an I/O computation, and a detailed analysis will be provided in \autoref{sec:measuring_read} to measure how this can effectively constitute the bottleneck of the entire computation. %The final stage $D$ takes the processed frames and conceptually acts as a single collector for the number of motion frames received.
+
+\subsection{Early termination assumption}
+
+We observe how the problem, as it is currently formulated, has the property that the time to process each frame is essentially uniform and does not dependent on the characteristics of the frame itself. Actually, one could take a different assumption for the problem setting, and consider the case where an \emph{"early termination"} semantics is applied to frames: if the number of differing pixels already analyzed so far is above the required percentage, then the rest of the frame is not analyzed. Thus only a portion of the frame is processed and compared to the background, and this could be done in two ways: applying the blur $B$ and greyscale $G$ to the full frame and use early termination just in the difference stage $D$, or by applying the three steps progressively throughout the frame and terminate at any point. 
+
+For simplicity, we do not consider this early termination approach and instead focus on the case where the time to process each frame is uniform. It can be argued that, in real-world use cases, this assumption would not provide a significant imbalance between the computation of different frames: the idea is that motion frames are usually temporally close to each other, as detecting a movement usually means with a high probability that the next frames will also be motion frames.
+
+\subsection{Skeleton analysis}
+
+After analyzing the theoretical properties of the problem, several parallel pattern skeletons were considered and analyzed before actually tackling and coding the parallel implementation of the problem.
+
+\paragraph{Proposal A} 
+
+\begin{equation}\label{nf}
+S_A = \textsf{Farm}(\textsf{Comp}(G,B,D))
+\end{equation}
+
+The first parallel skeleton and approach taken into account was the following: as different frames are loaded by the $R$ function, they can be classified in parallel by different workers, which all process the frames independently and without any need for synchronization. The number of motion frames is then computed by a final collector stage that sums up the results. This effectively equates with the skeleton presented in \autoref{nf}, which corresponds actually to the normal form for the composition of $G,B,D$.
+
+\paragraph{Proposal B} 
+
+\begin{equation}\label{sk2}
+S_B = \textsf{Farm}(\textsf{Pipe}(G,B,D))
+\end{equation}
+
+A second proposal is the skeleton presented in \autoref{sk2}, where a pipeline of the three stages required to process a frame is constructed instead of directly composing $G,B,D$. Supposing to take the same number of workers $n$, notice how the farm of $S_B$ will have $1/3$ the branching factor of $S_A$.
+
+\paragraph{Proposal C}
+
+\begin{equation}\label{sk3}
+S_D = \textsf{Pipe}(\textsf{Map}(\textsf{Comp}(G,B)),\textsf{Seq}(D))
+\end{equation}
+
+Finally, it can be noticed how, given a single frame, the $G$ and $B$ stages effectively perform independent computations on different parts of the frame, and the skeleton in \autoref{sk3} could be considered to parallelize the work on a single frame.
+
+\subsection{Proposal discussion}
+
+It can be shown that, in absence of special situations, the normal form guarantees the best service time for a stream parallel skeleton composition. Indeed, directly composing the stages of the pipeline of $S_B$ would reduce the overheads related to communications between different stages of the pipeline. Furthermore, $S_A$ better exploits the principle of spatial locality since the data produced by each stage is ideally readily available in cache for the next stage to process. As we will see in \autoref{sec:measurements}, the three stages turn out to be very unbalanced in timing, thus limiting the service time actually provided by the pipeline.
+
+The case of $S_C$ could even possibly use a GPU to implement the \textsf{Map} pattern; in our setting, however, the \textsf{Map} pattern would incur in non-trivial overheads due to splitting and joining the frame results, and would not easily exploit locality of reference. This pattern could also be a suitable solution in the case where the problem necessarily enforced an ordering in the processing of frames. Since in this case the processing order of the frames is irrelevant, we can exploit the simpler and more direct farm pattern provided by the normal form which, in general, would not preserve ordering of outputs.
+
+After considering some different approaches, it was concluded that the skeleton to most likely produce good results was the normal form $S_A$, due to its simplicity, good use of spatial locality, minimal presence of communication overheads, and best exploitation of the intrinsic properties of the problem. The \textsf{FastFlow}, \textsf{Threads}, and \textsf{OMP} implementations and their variants try to implement as closely as possible the parallel pattern described in $S_A$, and we will present our performance analysis for $S_A$.
+
+\subsection{Performance analysis}\label{sec:perfanalysis}
+
+The performance model of the target skeleton $S_A$ is provided in \autoref{perf},
+
+\begin{equation}\label{perf}
+T_s = \max\{t_e,\frac{t_G + t_B + t_D}{n},t_c\},
+\end{equation}
+
+where $T_e$ and $T_c$ are, respectively, the emitter and collector times of the farm. The emitter effectively implements the $R$ stage of the problem by reading the frames and supplying them to the farm workers, while the only use of the collector is to accumulate a binary information on whether the frame was a motion frame or not, and compute the total amount.
+
+\section{Methodology}\label{sec:methodology}
+
+In this section we briefly summarize the methodological choices and assumptions taken throughout the project. The OpenCV library is used to load the frames into memory from a \texttt{.mp4} file, albeit without employing any other functionality of the framework. The files considered in our analysis are described in \autoref{tbl:videos}.
+
+\begin{table}[H]
+\centering
+\begin{tabular}{r||r|r|r}
+\hline
+   \textbf{Video name} & \textbf{Resolution} & \textbf{Size} & \textbf{Length}\\
+\hline
+   \texttt{test\_big.mp4}   & $1920 \times 1440$ & 10.88MB & 812 frames \\
+   \texttt{test\_mid.mp4}   & $1280 \times 720$ & 3.62MB & 431 frames \\
+   \texttt{test\_small.mp4} & $858 \times 480$ & 859kB & 227 frames \\
+  \hline
+  \end{tabular}
+\caption{Test input videos considered and their characteristics.}
+\label{tbl:videos}
+\end{table}
+
+Different kernels can be used to blur the images; since the kernel choice in general does not affect the computation time, in our analysis we consider for simplicity only the $3 \times 3$ average blur kernel $H1$, while still maintaining the code generic with respect to the kernel chosen and its size, which can be selected at compile time. Similarly, the benchmarks performed in the project were taken with a standard set of blur and detection parameters fixed at the beginning of the analysis.
+
+All experimental measurements contained in this report were repeated multiple times in order to smoothen out the statistical error and provide more accurate results, along with making sure that the experiments were run in optimal conditions with no external load whenever possible. The standard deviation for timings was also collected but is not reported here for ease of presentation; however, it turned out extremely valuable to discern experimental outliers and high variability results, e.g., the case of the machine becoming occupied by other colleagues in the middle of the experiments.
+
+\subsection{Measurements}\label{sec:measurements}
+
+In order to get a concrete perspective with the timings involved in the problem before starting the parallel version, the sequential version was implemented and some average times of the different stages $R,G,B,D$ of the problem were obtained for the different video sizes. The average timings are reported in \autoref{tbl:measurements}, averaged over 20 iterations. The timings $t_R,t_G,t_B,t_D$ refer to the time spent in each stage for a single frame, while the last column $T_{bg}$ reports the total time spent to open the file, read the background, and process it for the three kinds of video type. In other words, $T_{bg}$ is the initialization time required to get the background ready and before we can start processing the actual frames of the videos. Since we are analyzing the sequential version and still abstracting from parallelism, this time does not include the initialization of threads and other parallel structures.
+
+\begin{table}[H]
+\centering
+\begin{tabular}{r||r||r|r|r|r||r}
+\hline
+   Video name & $T_{seq}$ & $t_R$ & $t_G$  & $t_B$ & $t_D$  & $T_{bg}$ \\
+\hline                                                    
+   \texttt{test\_big.mp4}   & 64.95$s$ & 9326$\mu s$ & 16444$\mu s$ & 49770$\mu s$ & 2638$\mu s$ & 173849$\mu s$\\
+   \texttt{test\_mid.mp4}   & 9.73$s$  & 2436$\mu s$ & 5816$\mu s$ & 18546$\mu s$ & 764$\mu s$ & 62852$\mu s$\\
+   \texttt{test\_small.mp4} & 2.34$s$  & 1104$\mu s$ & 2198$\mu s$ & 7109$\mu s$ & 218$\mu s$ & 35543$\mu s$\\
+  \hline
+  \end{tabular}
+\caption{Measurements given by the sequential version, averaged over 20 runs.}
+\label{tbl:measurements}
+\end{table}
+
+From the results obtained, it can be noticed how the processing stages $G$ and $B$ are the points of the computation where most of the time is spent, with $D$ being almost negligible. The background startup section $T_{bg}$ turned out to be a considerable initial overhead, with opening the file only taking 20\%/25\% of the total startup time and the rest taken by the processing and the \emph{first} read operation of the background frame. %, thus suggesting a prefetching of frames was taking place.
+
+%This overhead was then analyzed more in detail, and can be further decomposed: opening the file actually takes only 20\%/25\% of the total startup computation, and processing the background frame is in line with the results for other frames. The bulk of the startup is performed on the first \emph{read operation}, thus suggesting that either the actual file opening is delayed on-demand or that OpenCV might perform a sort of prefetching on frames, retrieving multiple at a time. In \autoref{tbl:measurements} the \emph{average reading time} $t_R$ for a single frame for the sequential version is reported.
+
+\subsection{Measuring read time}\label{sec:measuring_read}
+
+This read operation was analyzed more in detail, since it is the core bottleneck of the program and is also crucial in understanding the theoretical best speedup achievable in our setting. By analyzing the individual read operations, we noticed periodic spikes in latency, which suggested that frames are possibly buffered and read multiple at a time. Furthermore, it turns out that the read operation takes different times depending on the frequency with which it is performed, thus suggesting a form of prefetching and loading of frames ahead-of-time. This is crucial, since the reading time measured by the sequential time, which delays the read operations due to the grey and blur done immediately after, turned out to be \emph{much greater} than the reading time measured by the parallel implementations, which issue read operations more frequently as the actual blur and greyscales is off-loaded to other workers by sending frames through a queue. This is probably done by the OpenCV framework in order to manage the frequent use case where the video is fully loaded in memory by applications and \emph{then} processed, rather than processing frame-by-frame. We present the read times measured in the two scenarios in \autoref{fig:read_timings} with a sample run, with their respective average shown as horizontal dashed lines. The performance improvement is shown in \autoref{tbl:read_timings}, and we notice how it is most noticeable in the \texttt{test\_big.mp4}, which is the example that prompted us to do this analysis. The \texttt{test\_small.mp4} case is not shown as the effect and timing difference is negligible, but is available in the accompanying Jupyter notebook of the project. This allowed to recompute our estimates of the time spent by the read operations as the frequency of the operations increases. 
+
+\begin{figure}[H]
+\centering
+\includesvg[width=1.0\textwidth]{read_timings.svg}
+\vspace{-1.3em}
+\caption{Read timings depending on the frequency of the reads: no wait, or time of $B+G+D$ workload.}
+\label{fig:read_timings}
+\end{figure}
+\vspace{-1em}
+\begin{table}[H]
+\centering
+\begin{tabular}{r||c|c|r}
+\hline
+   \textbf{Video name} & \textbf{Workload $t_R$} & \textbf{Successive $t_R$} & \textbf{Improvement\%} \\
+\hline                                                    
+   \texttt{test\_big.mp4}   & 9326$\mu s$ & 6576$\mu s$ & 29.48\%\\
+   \texttt{test\_mid.mp4}   & 2436$\mu s$ & 2060$\mu s$ & 15.43\%\\
+   \texttt{test\_small.mp4} & 1104$\mu s$ & 1040$\mu s$ &  5.79\%\\
+  \hline
+  \end{tabular}
+\caption{Read operations timings as read frequency increases.}
+\label{tbl:read_timings}
+\end{table}
+
+\subsection{Performance predictions}
+
+Considering a single frame execution, we can take again the performance normal form in \autoref{perf} and consider the case where, as the parallelism degree increases, the bottleneck of the computation shifts from the actual computation to the I/O bound read operation in \autoref{readbottle}. Note how we equate $t_e$, the abstract time performed by the collector of the farm, with $t_R$. In this case, $t_R$ corresponds with the \emph{fast read}, since read operations are taken in quick succession since the frames are immediately provided to the workers. Since $t_c$ only collects and accumulates the motion frames count, it can be assumed to be negligible in the following analysis. For simplicity, only the case of \texttt{test\_big.mp4} was considered here, and a similar reasoning can be applied to the other video examples. 
+
+\begin{equation}\label{readbottle}
+T_s(n) = \max\{t_R,\frac{t_G + t_B + t_D}{n},t_c\} \approx \max\{6576,\frac{68852}{n},t_c\}
+\end{equation}
+
+A \emph{theoretical best service time} $\widehat T_s \approx \max\{t_R, t_c\} = t_R \approx 6576 \mu s$ is considered by taking the reading time as the only bottleneck of the computation: this can be achieved by increasing the parallelism degree to the point where the total processing time \mbox{$t_P=t_G+t_B+t_D$} is comparable to $t_R$, which becomes the dominant time of the computation. By taking these two times as equal and rearranging \autoref{readbottle}, we expect the \emph{theoretical best speedup} $\widehat{s}$ to be reached around at least $n \geq 68852/6576 \approx 10.5$, with the other terms being negligible. Finally, a \emph{theoretical best completion time} $\widehat T_{par}$ can be computed by considering the full computation in terms of $\widehat T_s$, as shown in \autoref{idealcompletion}. This effectively coincides with the total serial time of the application, as per Amdahl's law.
+
+\begin{equation}\label{idealcompletion}
+\widehat T_{par} = T_{bg} + \widehat T_s \cdot (\textsf{number of frames})
+\end{equation}
+
+The best theoretical speedup is then computed to be $\widehat{s} = T_{seq} / \widehat T_{par}$ in the best case. The expected values are reported in \autoref{tbl:predictions}, and we will refer again to these expected results and test them against the actual data obtained in the parallel version in \autoref{sec:results}. For completeness, we also show the predictions obtained by considering the (inaccurate) workload $t_R$ provided by the sequential version.
+
+\begin{table}[H]
+\centering
+\begin{tabular}{r||c|c|c|c}
+\hline
+                 & \multicolumn{2}{c|}{\textbf{Successive $t_R$}} & \multicolumn{2}{c}{\textbf{Workload $t_R$}}\\\hline
+\textbf{Video name}              & $\widehat s$ & $\widehat T_{par}$         & $\widehat s$   & $\widehat T_{par}$\\\hline
+\texttt{test\_big.mp4}   & 12.0         & 5.53$s$                  & 8.5            & 7.78$s$\\
+\texttt{test\_mid.mp4}   & 10.3         & 0.95$s$                  & 8.1           & 1.19$s$\\
+\texttt{test\_small.mp4} & 7.7          & 271$ms$               & 7.2            & 286$ms$\\
+\hline
+  \end{tabular}
+\caption{Theoretical best predictions for the parallel implementation.}
+\label{tbl:predictions}
+\end{table}
+
+\section{Implementation}
+
+This section briefly introduces and described the three implementations provided: one using \texttt{C++} STL \textsf{Threads}, one with the \textsf{FastFlow} framework, and one using \textsf{OpenMP}.
+
+\paragraph{\textsf{Threads}} The workers are created according to a fork-join model, with a single emitter thread that provides the frames to be processed using a single thread-safe blocking unbounded queue. Each worker privately accumulates the count of motion frames for the ones that has received, with no external emission or synchronization. The queue can be signaled as \emph{done}, in which case all $n$ workers try to access a global atomic variable where each sums up their local motion frames count and the final result is computed. Both the standard version (\texttt{threads}) and a version experimenting with thread pinning  (\texttt{threads\_pinned}), using the identity mapping thread $i$ to core $i$, are proposed and analyzed in the subsequent sections.
+
+\paragraph{\textsf{FastFlow}} A \texttt{ff\_Farm} structure is used to coordinate emitter and workers: since the work performed by the collector is minimal, it would be wasteful to allocate an entire thread just to compute the results, which, similarly to the \textsf{Threads} version, only need to output their local counter once at the end of the entire computation. Therefore, we similarly decided to directly use an atomic counter that each worker writes their local counter to when they receive the \texttt{EOS} signal from the emitter, performing an atomic operation only $n-1$ times, with $n$ being the parallelism degree. As anticipated with our problem analysis in \autoref{sec:problemanalysis}, the computations for the frames are essentially balanced and therefore it was not necessary to use an \texttt{on\_demand\_scheduling} mechanism to improve the computations, and indeed it showed little to worse improvement. We provide the results for a standard version with no additional settings (\texttt{fastflow}), one using \texttt{blocking\_mode} queues (\texttt{fastflow\_blocking}), and one using both blocking queues and disabling the mapping on CPU cores (\texttt{fastflow\_blocking\_no\_map}).
+
+\paragraph{\textsf{OpenMP}} This implementation was provided due to previous (positive) experience with the OpenMP framework, and its ease of implementation (\texttt{omp}). After setting up all the workers with the \texttt{parallel} pragma, a \texttt{single} block is used to read the tasks from input and takes a unique thread to act as emitter; the processing of each frame is done and distributed between the workers with a \texttt{task} block, and the global counter is updated atomically with an \texttt{atomic} block at the end of \emph{each} frame processing.
+
+
+\subsection{Usage}
+
+We provide here a self-explanatory example to retrieve, compile, and execute the code of the project. It is required for the following dependencies to be installed: \texttt{FastFlow} (3.0.1), \texttt{OpenCV} (4.4.5), \texttt{OpenMP} (4.1.2). Upon successful compilation, the executables can be found in the folder \texttt{\textcolor{pisa}{bin/}}.
+
+\begin{minted}[escapeinside=||]{bash}
+$ git clone https://github.com/iwilare/video-motion-detection
+$ cd video-motion-detection/
+$ cmake . && make
+$ # Example with 0.02 greyscale threshold, >=30\% differing pixels,
+$ # with default H1 average kernel, using 4 as total number of workers
+$ bin/fastflow videos/test_mid.mp4 -d 0.02 -t 0.3 -n 4
+> Motion frames over total video frames: (105 / 431)
+> Total microseconds: 1695792
+\end{minted}
+
+\subsection{Project structure}
+
+
+\newcommand\dirtreecomment[2]{\begin{minipage}[t]{.23\textwidth}\texttt{#1}\ \hrulefill\end{minipage}\ \begin{minipage}[t]{.6\linewidth}#2\end{minipage}}
+\newcommand\dirtreecommentA[2]{\begin{minipage}[t]{.265\textwidth}\texttt{#1}\ \hrulefill\end{minipage}\ \begin{minipage}[t]{.6\linewidth}#2\end{minipage}}
+
+\begin{minipage}{\textwidth}
+A brief overview of the main files contained in the project is presented in the following tree.
+\dirtree{%
+.0  .
+.1 \texttt{\textcolor{pisa}{videos/}}: contains the three example videos{.}.
+.1 \texttt{\textcolor{pisa}{plot/}}: jupyter notebook for data visualization{.}.
+.1 \texttt{\textcolor{pisa}{src/}}: source files{.}.
+.2 \texttt{\textcolor{pisa}{lib/}}: common files shared among all versions{.}.
+.3 \dirtreecommentA{args.cpp}{command line arguments management.}.
+.3 \dirtreecommentA{cpu\_affinity.cpp}{cpu affinity procedures.}.
+.3 \dirtreecommentA{kernels.cpp}{example kernel definitions.}.
+.3 \dirtreecommentA{shared\_queue.cpp}{implementation of a thread-safe blocking queue.}.
+.3 \dirtreecommentA{utimer.cpp}{helper structure for time measurements.}.
+.3 \dirtreecommentA{video\_detection.cpp}{main video detection logic and processing.}.
+.3 \dirtreecommentA{main.cpp}{common main structure for all implementations.}.
+.2 \dirtreecomment{measurements.cpp}{standalone file to measure the individual stages timings.}.
+.2 \dirtreecomment{sequential.cpp}{sequential implementation.}.
+.2 \dirtreecomment{threads.cpp}{main implementation with \texttt{C++} STL threads.}.
+.2 \dirtreecomment{fastflow.cpp}{main implementation with \texttt{FastFlow}.}.
+.2 \dirtreecomment{omp.cpp}{main implementation with \texttt{OpenMP}.}.
+.2 \dirtreecomment{...}{other versions.}.
+.1  \dirtreecomment{benchmark.sh}{main file to run every benchmark, writes .csv to \texttt{\textcolor{pisa}{data/}}.}.
+.1  \dirtreecomment{measurements.sh}{script to measure sequential and read time on all videos.}.
+}
+\end{minipage}
+
+\newpage
+\newgeometry{top=2.2cm,bottom=2.7cm,right=1.2cm,left=1.2cm}
+\begin{figure}[H]\centering
+%\renewcommand{\arraystretch}{0.0}
+\subfigure{\includesvg[height=0.40\textwidth]{speedup_test_big.svg}}
+\subfigure{\includesvg[height=0.40\textwidth]{speedup_test_small.svg}}
+\subfigure{\includesvg[height=0.40\textwidth]{completion_time_test_big.svg}}
+\subfigure{\includesvg[height=0.40\textwidth]{completion_time_test_small.svg}}
+\subfigure{\includesvg[height=0.40\textwidth]{efficiency_test_big.svg}}
+\subfigure{\includesvg[height=0.40\textwidth]{efficiency_test_small.svg}}
+\caption{Speedup, completion times, and efficiency for the \texttt{test\_big} and \texttt{test\_small} cases, averaged over 5 runs.}
+\label{fig:all}
+\end{figure}
+\restoregeometry
+\newpage
+
+\titlespacing{\paragraph}{0em}{0.3em}{0.3em}
+
+\section{Results}\label{sec:results}
+In this section we report the measurements obtained with the parallel versions and discuss them. These results were obtained by running them on the Intel(R) Xeon(R) Gold 5120 CPU @ 2.20GHz machine with 32 cores, averaged over 5 runs, and are presented in \autoref{fig:all}. For simplicity we present speedup, completion time and efficiency for the \texttt{test\_big} and \texttt{test\small}, since the \texttt{test\_mid} case shows similar behaviours to the other versions. The complete plots can be viewed in the Jupyter notebook. In order to provide a better interpretation of the results, graphs actually start with 2 as the number of \emph{total} workers, since at least one emitter and one worker are required for all 6 versions to work. Thus, we refer to the number of \emph{farm} workers, and, for the same reason, the ideal performance $T_{ideal} = T_{seq} / n$ reported in the graph takes $n$ as the number of farm workers, even though strictly \emph{total} workers would be more correct (e.g., an hypothetical parallel implementation that does not require an emitter should be favoured). The figures also indicate the theoretical best completion time and speedups previously computed in \autoref{tbl:predictions}, using both the fast read time $t_R$ with successive reads and, for completeness, the case of reads $t_R$ separated in time with a workload. As can be seen in the case of \texttt{test\_big}, the predictions given by the theoretical analysis would greatly overlap with the results if we had used the original time directly given by the sequential version, and this theory-driven observation was what prompted the more detailed analysis in \autoref{sec:measuring_read}.
+
+\paragraph{General considerations.} We notice how the best results were provided by the \texttt{threads}, \texttt{fastflow\_blocking\_no\_map}, and \texttt{omp} versions. The \texttt{threads} version constitutes the most complex implementation, since it requires a custom-built implementation to define a shared queue mechanism. This notwithstanding, both the \texttt{fastflow} and \texttt{omp} versions provide sufficiently abstract parallel mechanisms that allowed us to focus on the main program logic. At the same time, both still provided quite satisfactory and comparable performance results to the \texttt{threads} versions, with the FastFlow framework being vastly more flexible and customizable in its behaviour and performance settings, as we have seen with the different versions tested.
+
+\paragraph{Thread pinning.} Among the 6 versions tested in our measurements, the behaviour of the versions can indeed be easily distinguished in two groups, namely, those that employ a form of thread pinning to CPU cores and those who do not. Thread pinning was done to minimize the effects of context switching between cores and maximize the locality of the caches: the CPU topology of the machine was viewed with \texttt{lstopo}, which presents no evident signs of cache sharing or hierarchical subdivision of caches. Experimentally, on this architecture the effect of thread pinning is quite noticeable and considerably degrades performances, especially with a low number of cores, while its effects seem to smoothen out as the number of threads increases. This could be due to the fact that setting affinity with a low parallelism degree here might lead to worse choices than those that can be performed by the kernel. However, thread pinning also seems to provide more stable and predictable performance measurements in all three video versions, probably because we remove the unpredictability factor of threads being moved from and to different CPU cores. Among the thread pinning versions, both the \texttt{threads\_pinned}, \texttt{fastflow}, and \texttt{fastflow\_blocking} show similar overall performance; approaching and going above the limit of 32 cores, the two FastFlow versions considerably drop in performance, with the no-mapping \texttt{fastflow\_blocking\_no\_map} version not being affected, and this could be because of the overhead given by the CPU trying to pin more threads than the number of cores available. Similarly, all thread pinning versions have a sharp drop in efficiency after a second worker for the farm is introduced.
+
+\paragraph{Blocking vs non-blocking.} The version with blocking queues seems to have less of a performance drop when reaching the 32 cores limit, possibly because, despite the unsuccessful mapping, the unused cores do not perform active waits on the queues and degrade performance. Overall, the blocking version and the standard one seem to have comparable timings when a sufficient parallelism degree is reached.
+
+\paragraph{Video size.} The rationale for testing different video sizes is to experimentally verify how, on one side, small computations such as the \texttt{test\_small.mp4} case should be harder to parallelize and achieve good speedups without incurring in the overheads of setting up threads and the parallel computation. Indeed, the small test case achieved overall good results, but is the only case where a slight progressive increase in completion time can be noticed as the number of threads to setup increases. On the other hand, computations with greater completion times allow us to amortize the setup and management of concurrent activities, and our expectation to see better speedups with tasks that workers take more time to complete was confirmed. The speedups and total times achieved in the case of \texttt{test\_big} are quite satisfactory, and are even closer to the theoretical best than the case of smaller datasets.
+
+\paragraph{Overheads.} As argued in \autoref{sec:measurements}, the main bottleneck of the computation is constituted by the reading time $t_R$, which limits the maximum speedups achievable and constitutes the main contribution to the serial fraction of the program. However, our analysis does not take into account communication overheads, both in terms of concurrent access to the queues used in both \texttt{fastflow} and \texttt{threads} analysis, the overhead of writing the final results to the shared atomic counter, and, most importantly, the overhead related to moving and accessing frames from the different cores.  Since no modification is made to the input frames, the effects of false sharing should be limited to none, but there is overhead in distributing the frames to the workers and accessing the common background frame. In order to slightly mitigate these overheads, each worker in our implementation keeps a local copy of the background frame copied at the beginning of the computation, and is thus not shared. Partially because of this, notice that the actual reading time $t_R$ for the computations is slightly higher than the ideal one computed, since the read operations are delayed with the overhead of distributing frames: for example the \texttt{threads} version directly measures a $t_R \approx 6898\mu s$ instead of the minimum $6576\mu s$. Since we are doing predictions and considering measurements for the \emph{ideal} case for the sequential version, we take $6576\mu s$ as the nominal (successive) read time. Furthermore, the time to initially setup concurrent resources was not taken into account, but this should constitute a relatively minor overhead, especially when comparing this one-off time with respect to the total computation time, e.g. in the case of \texttt{test\_big.mp4}.
+
+Finally, we report in \autoref{tbl:service_time_results} the minimum service times reached by the parallel versions along with the corresponding parallelism degree, which were computed as $T_s = (T_{par} - T_{bg}) / (\textsf{number of frames})$.
+
+
+
+%
+
+\begin{table}[H]
+\centering
+\begin{tabular}{r||c|c|c|c|c|c}
+\hline
+                 & \multicolumn{2}{c|}{\textbf{\texttt{test\_big.mp4}}} & \multicolumn{2}{c|}{\textbf{\texttt{test\_mid.mp4}}} & \multicolumn{2}{c}{\textbf{\texttt{test\_small.mp4}}} \\\hline
+\textbf{Timing}              & $\textsf{min}\{T_s(n)\}$ & $n$ &     $\textsf{min}\{T_s(n)\}$ & $n$ & $\textsf{min}\{T_s(n)\}$ & $n$\\\hline
+\textbf{\texttt{threads}}                               & 8081$\mu s$ & 19 &	2723$\mu s$ & 13 &	1374$\mu s$ & 13 \\	
+\textbf{\texttt{threads\_pinned}}                       & 8993$\mu s$ & 19 &	2800$\mu s$ & 29 &	1414$\mu s$ & 25 \\	
+\textbf{\texttt{fastflow}}                              & 8341$\mu s$ & 20 &	2823$\mu s$ & 20 &	1454$\mu s$ & 18 \\	
+\textbf{\texttt{fastflow\_blocking}}                    & 8253$\mu s$ & 20 &	2780$\mu s$ & 20 &	1422$\mu s$ & 20 \\	
+\textbf{\texttt{fastflow\_blocking\_no\_map}}           & 8238$\mu s$ & 22 &	2771$\mu s$ & 17 &	1411$\mu s$ & 15 \\	
+\textbf{\texttt{omp}}                                   & 8164$\mu s$ & 22 &	2731$\mu s$ & 12 &	1307$\mu s$ & 9  \\	\hline
+\textbf{Ideal service time $\widehat T_s = t_R$} & 6576$\mu s$ &    & 2060$\mu s$ &    & 1040$\mu s$ &    \\
+\hline
+  \end{tabular}
+\caption{Minimum service time computed and the parallelism degree at which it is reached.}
+\label{tbl:service_time_results}
+\end{table}
+
+\vspace{-3em}
+
+\appendix
+
+
+
+\end{document}
